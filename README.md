@@ -30,7 +30,7 @@ This project implements a hazard detection and captioning system for driver moni
 │       ├── yolo11n.pt
 │       └── yolov8n.pt
 ├── pics                                  # Sample images for testing
-│   ├── car.jpeg
+│   ├── dog.png
 ├── README.md                             # Documentation file (this file)
 ├── requirements.txt                      # Dependencies for the project
 ├── results
