@@ -204,7 +204,7 @@ def test_yolo_detector(image_path, model_name="yolov8n.pt"):
 
 
 if __name__ == "__main__":
-    test_image_path = "pics/car.jpeg"
+    test_image_path = "pics/dog.png"
     try:
         test_yolo_detector(test_image_path, model_name="models/YOLO_models/yolo11n.pt")
     except Exception as e:
