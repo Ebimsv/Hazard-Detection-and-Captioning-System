@@ -54,6 +54,11 @@ def initialize_results_file(filepath):
     return filepath
 
 
+from collections import defaultdict
+import numpy as np
+from PIL import Image
+
+
 def process_video(
     video_processor, video_name, yolo_detector, captioner, results_filepath
 ):
@@ -67,10 +72,14 @@ def process_video(
     previous_centroids = []
     median_dists = []
     captioned_tracks = {}
+    hazard_history = defaultdict(int)  # Track persistent hazards
     driver_state_flag = False
     driver_state_triggered = (
         False  # Ensure state change is triggered only once per video
     )
+
+    # Extended relevant classes
+    relevant_classes = {0, 1, 2, 3, 5, 7, 9, 11, 13, 17, 18, 19, 22, 23}
 
     while video_stream.isOpened():
         print(f"Processing {video_name}, frame {frame_count}")
@@ -78,8 +87,8 @@ def process_video(
         if not ret:
             break  # End of video
 
-        # Detect bounding boxes and track IDs
-        bboxes, track_ids, _, _ = yolo_detector.get_bboxes(frame_image)
+        # Detect bounding boxes, classes, and track IDs
+        bboxes, track_ids, classes, _ = yolo_detector.get_bboxes(frame_image)
         centroids = np.array(
             [(x1 + (x2 - x1) / 2, y1 + (y2 - y1) / 2) for x1, y1, x2, y2 in bboxes]
         )
@@ -101,29 +110,63 @@ def process_video(
             median_dist = np.median(dists)
             median_dists.append(median_dist)
 
-            if detect_driver_state_change(
-                median_dists
-            ):  # Custom logic for state change
-                driver_state_flag = True
-                driver_state_triggered = True  # Lock state to prevent further changes
+            # Detect driver state change
+            if len(median_dists) > 1:
+                x = np.arange(len(median_dists)).reshape(-1, 1)
+                y = np.array(median_dists)
+                speed_model = LinearRegression().fit(x, y)
+                if speed_model.coef_[0] < 0:  # Driver slowing down
+                    driver_state_flag = True
+                    driver_state_triggered = True  # Lock state change
 
-        # Hazard detection
-        detected_hazards = []
-        for i, (bbox, track_id) in enumerate(zip(bboxes, track_ids)):
+        # Filter relevant hazards based on object classes
+        filtered_indices = [
+            i for i, cls in enumerate(classes) if cls in relevant_classes
+        ]
+        if not filtered_indices:
+            frame_count += 1
+            continue
+
+        filtered_centroids = centroids[filtered_indices]
+        filtered_track_ids = [track_ids[i] for i in filtered_indices]
+        filtered_bboxes = [bboxes[i] for i in filtered_indices]
+
+        # Identify the closest hazard to the center of the screen
+        image_center = np.array([frame_image.shape[1] / 2, frame_image.shape[0] / 2])
+        potential_hazard_dists = np.linalg.norm(
+            filtered_centroids - image_center, axis=1
+        )
+        probable_hazard_index = np.argmin(potential_hazard_dists)
+        hazard_track = filtered_track_ids[probable_hazard_index]
+        hazard_bbox = filtered_bboxes[probable_hazard_index]
+
+        # Update hazard history for temporal consistency
+        hazard_history[hazard_track] += 1
+        if (
+            hazard_history[hazard_track] < 3
+        ):  # Ignore hazards appearing for fewer than 3 frames
+            frame_count += 1
+            continue
+
+        # Generate or reuse hazard captions
+        if hazard_track not in captioned_tracks:
             hazard_chip = Image.fromarray(
                 cv2.cvtColor(
                     frame_image[
-                        int(bbox[1]) : int(bbox[3]), int(bbox[0]) : int(bbox[2])
+                        int(hazard_bbox[1]) : int(hazard_bbox[3]),
+                        int(hazard_bbox[0]) : int(hazard_bbox[2]),
                     ],
                     cv2.COLOR_BGR2RGB,
                 )
             )
             hazard_caption = captioner.get_caption(hazard_chip).replace(",", " ")
-            detected_hazards.append((track_id, hazard_caption))
+            captioned_tracks[hazard_track] = hazard_caption
+        else:
+            hazard_caption = captioned_tracks[hazard_track]
 
-        # Prepare hazard tracks and names
-        hazard_tracks = [str(h[0]) for h in detected_hazards]
-        hazard_names = [h[1] for h in detected_hazards]
+        # Prepare hazard tracks and names for CSV
+        hazard_tracks = [str(hazard_track)]
+        hazard_names = [hazard_caption]
 
         # Fill up to 22 hazard slots with empty strings
         hazard_tracks += [""] * (22 - len(hazard_tracks))
