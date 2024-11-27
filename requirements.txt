@@ -1,0 +1,10 @@
+torch
+torchvision
+opencv-python
+numpy
+scikit-learn
+transformers
+ultralytics
+segment-anything
+pycocotools
+Pillow

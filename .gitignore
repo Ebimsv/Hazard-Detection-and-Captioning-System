@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.log
+*.csv
+data/videos/*
+src/utils/__pycache__
+models/blip-image-captioning-base/*
+models/YOLO_models/*
