@@ -3,7 +3,6 @@ __pycache__/
 *.pyo
 *.pyd
 *.log
-*.csv
 data/videos/*
 src/utils/__pycache__
 models/blip-image-captioning-base/*
