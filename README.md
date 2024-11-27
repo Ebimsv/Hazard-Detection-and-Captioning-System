@@ -14,15 +14,21 @@ This project implements a hazard detection and captioning system for driver moni
 │   │   └── annotations.pkl               # Annotations for videos
 │   └── videos
 │       ├── video_0001.mp4                # Sample video file
+|       |── .....
 │       └── video_0200.mp4                # Additional video files
-├── blip-image-captioning-base            # BLIP captioning model files
-│   ├── config.json
-│   ├── preprocessor_config.json
-│   ├── pytorch_model.bin
-│   ├── ...
-├── YOLO_models                           # Pre-trained YOLO models
-│   ├── yolo11n.pt
-│   └── yolov8n.pt
+|── models
+│   ├── blip-image-captioning-base        # BLIP captioning model files
+│   │   ├── config.json
+│   │   ├── preprocessor_config.json
+│   │   ├── pytorch_model.bin
+│   │   ├── README.md
+│   │   ├── special_tokens_map.json
+│   │   ├── tokenizer_config.json
+│   │   ├── tokenizer.json
+│   │   └── vocab.txt
+│   └── YOLO_models                       # Pre-trained YOLO models
+│       ├── yolo11n.pt
+│       └── yolov8n.pt
 ├── pics                                  # Sample images for testing
 │   ├── car.jpeg
 ├── README.md                             # Documentation file (this file)
@@ -184,4 +190,4 @@ This project is open-source and licensed under the MIT License.
 - Improved driver state detection using advanced temporal algorithms.
 - Enhanced scoring and evaluation metrics for hazard predictions.
 
-Feel free to contribute to the project by submitting pull requests or issues. Happy detecting! 🚗🔍
+Feel free to contribute to the project by submitting pull requests or issues. 🚗🔍
