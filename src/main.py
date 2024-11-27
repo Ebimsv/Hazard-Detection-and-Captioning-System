@@ -1,12 +1,13 @@
-import argparse
-import os
-import cv2
 import numpy as np
+import argparse
+from PIL import Image
 from utils.video_utils import VideoProcessor
 from utils.detection_utils import YOLODetector
 from utils.captioning_utils import get_captioner
 from utils.state_change_utils import detect_driver_state_change
-from PIL import Image
+from collections import defaultdict
+import cv2
+import os
 
 
 def parse_arguments():
@@ -54,11 +55,6 @@ def initialize_results_file(filepath):
     return filepath
 
 
-from collections import defaultdict
-import numpy as np
-from PIL import Image
-
-
 def process_video(
     video_processor, video_name, yolo_detector, captioner, results_filepath
 ):
@@ -78,7 +74,7 @@ def process_video(
         False  # Ensure state change is triggered only once per video
     )
 
-    # Extended relevant classes
+    # relevant classes
     relevant_classes = {0, 1, 2, 3, 5, 7, 9, 11, 13, 17, 18, 19, 22, 23}
 
     while video_stream.isOpened():
@@ -111,13 +107,9 @@ def process_video(
             median_dists.append(median_dist)
 
             # Detect driver state change
-            if len(median_dists) > 1:
-                x = np.arange(len(median_dists)).reshape(-1, 1)
-                y = np.array(median_dists)
-                speed_model = LinearRegression().fit(x, y)
-                if speed_model.coef_[0] < 0:  # Driver slowing down
-                    driver_state_flag = True
-                    driver_state_triggered = True  # Lock state change
+            if detect_driver_state_change(median_dists):
+                driver_state_flag = True
+                driver_state_triggered = True  # Lock state change
 
         # Filter relevant hazards based on object classes
         filtered_indices = [
