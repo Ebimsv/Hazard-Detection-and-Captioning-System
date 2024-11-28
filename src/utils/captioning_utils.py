@@ -130,7 +130,7 @@ def get_captioner(model_name, max_new_tokens=50):
 if __name__ == "__main__":
     from PIL import Image
 
-    test_image_path = "pics/human.JPG"
+    test_image_path = "pics/dog.png"
     model_name = "blip_base"
 
     try:
