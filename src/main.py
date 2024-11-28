@@ -5,7 +5,6 @@ from utils.video_utils import VideoProcessor
 from utils.detection_utils import YOLODetector
 from utils.captioning_utils import get_captioner
 from utils.state_change_utils import detect_driver_state_change
-from collections import defaultdict
 import cv2
 import os
 
@@ -67,14 +66,15 @@ def process_video(
     frame_count = 0
     previous_centroids = []
     median_dists = []
-    captioned_tracks = {}
-    hazard_history = defaultdict(int)  # Track persistent hazards
     driver_state_flag = False
     driver_state_triggered = (
         False  # Ensure state change is triggered only once per video
     )
 
-    # relevant classes
+    # Get class names dynamically from the detector
+    class_names = yolo_detector.model.names
+
+    # Define relevant YOLO classes for hazard detection
     relevant_classes = {0, 1, 2, 3, 5, 7, 9, 11, 13, 17, 18, 19, 22, 23}
 
     while video_stream.isOpened():
@@ -83,10 +83,25 @@ def process_video(
         if not ret:
             break  # End of video
 
-        # Detect bounding boxes, classes, and track IDs
-        bboxes, track_ids, classes, _ = yolo_detector.get_bboxes(frame_image)
+        # Detect bounding boxes and class IDs
+        bboxes, _, class_ids, _ = yolo_detector.get_bboxes(frame_image)
+
+        # Filter only relevant classes
+        filtered_indices = [
+            i for i, class_id in enumerate(class_ids) if class_id in relevant_classes
+        ]
+        if not filtered_indices:
+            frame_count += 1
+            continue
+
+        filtered_bboxes = [bboxes[i] for i in filtered_indices]
+        filtered_class_ids = [class_ids[i] for i in filtered_indices]
+
         centroids = np.array(
-            [(x1 + (x2 - x1) / 2, y1 + (y2 - y1) / 2) for x1, y1, x2, y2 in bboxes]
+            [
+                (x1 + (x2 - x1) / 2, y1 + (y2 - y1) / 2)
+                for x1, y1, x2, y2 in filtered_bboxes
+            ]
         )
 
         # Skip processing if there are no centroids or no previous centroids
@@ -106,59 +121,30 @@ def process_video(
             median_dist = np.median(dists)
             median_dists.append(median_dist)
 
-            # Detect driver state change
-            if detect_driver_state_change(median_dists):
+            if detect_driver_state_change(
+                median_dists
+            ):  # Custom logic for state change
                 driver_state_flag = True
-                driver_state_triggered = True  # Lock state change
+                driver_state_triggered = True  # Lock state to prevent further changes
 
-        # Filter relevant hazards based on object classes
-        filtered_indices = [
-            i for i, cls in enumerate(classes) if cls in relevant_classes
-        ]
-        if not filtered_indices:
-            frame_count += 1
-            continue
-
-        filtered_centroids = centroids[filtered_indices]
-        filtered_track_ids = [track_ids[i] for i in filtered_indices]
-        filtered_bboxes = [bboxes[i] for i in filtered_indices]
-
-        # Identify the closest hazard to the center of the screen
-        image_center = np.array([frame_image.shape[1] / 2, frame_image.shape[0] / 2])
-        potential_hazard_dists = np.linalg.norm(
-            filtered_centroids - image_center, axis=1
-        )
-        probable_hazard_index = np.argmin(potential_hazard_dists)
-        hazard_track = filtered_track_ids[probable_hazard_index]
-        hazard_bbox = filtered_bboxes[probable_hazard_index]
-
-        # Update hazard history for temporal consistency
-        hazard_history[hazard_track] += 1
-        if (
-            hazard_history[hazard_track] < 3
-        ):  # Ignore hazards appearing for fewer than 3 frames
-            frame_count += 1
-            continue
-
-        # Generate or reuse hazard captions
-        if hazard_track not in captioned_tracks:
+        # Hazard detection
+        detected_hazards = []
+        for i, (bbox, class_id) in enumerate(zip(filtered_bboxes, filtered_class_ids)):
+            class_name = class_names[class_id]  # Dynamically retrieve class name
             hazard_chip = Image.fromarray(
                 cv2.cvtColor(
                     frame_image[
-                        int(hazard_bbox[1]) : int(hazard_bbox[3]),
-                        int(hazard_bbox[0]) : int(hazard_bbox[2]),
+                        int(bbox[1]) : int(bbox[3]), int(bbox[0]) : int(bbox[2])
                     ],
                     cv2.COLOR_BGR2RGB,
                 )
             )
             hazard_caption = captioner.get_caption(hazard_chip).replace(",", " ")
-            captioned_tracks[hazard_track] = hazard_caption
-        else:
-            hazard_caption = captioned_tracks[hazard_track]
+            detected_hazards.append((class_id, f"{class_name}: {hazard_caption}"))
 
-        # Prepare hazard tracks and names for CSV
-        hazard_tracks = [str(hazard_track)]
-        hazard_names = [hazard_caption]
+        # Prepare hazard tracks and names
+        hazard_tracks = [str(h[0]) for h in detected_hazards]
+        hazard_names = [h[1] for h in detected_hazards]
 
         # Fill up to 22 hazard slots with empty strings
         hazard_tracks += [""] * (22 - len(hazard_tracks))
@@ -188,7 +174,7 @@ def main():
     captioner = get_captioner(args.caption_model)
 
     # Hardcoded video name
-    video_name = "video_0001"
+    video_name = "video_0002"
 
     if video_name in video_processor.annotations:
         process_video(
