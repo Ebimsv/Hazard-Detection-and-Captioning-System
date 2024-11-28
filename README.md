@@ -36,6 +36,7 @@ This project implements a hazard detection and captioning system for driver moni
 │   │   └── annotations.pkl               # Annotations for videos
 │   └── videos
 │       ├── video_0001.mp4                # Sample video file
+        └── ...
 │       └── video_0200.mp4                # Additional video files
 ├── models
 │   ├── blip-image-captioning-base        # BLIP captioning model files
