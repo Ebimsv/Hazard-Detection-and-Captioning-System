@@ -89,7 +89,7 @@ This project implements a hazard detection and captioning system for driver moni
    pip install -r requirements.txt
    ```
 
-3. **Download Pre-trained Models**:
+3. **Using Pre-trained Models**:
 
    - **YOLO Models**:
 
