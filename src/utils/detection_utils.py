@@ -6,7 +6,7 @@ import cv2
 class YOLODetector:
     def __init__(
         self,
-        model_name="models/YOLO_models/yolov8n.pt",
+        model_name="models/YOLO_models/yolo11n.pt",
         conf_threshold=0.5,
         input_size=640,
     ):
@@ -186,6 +186,10 @@ def test_yolo_detector(image_path, model_name="yolov8n.pt"):
 
         # Detect bounding boxes
         bboxes, track_ids, class_ids, confidences = detector.get_bboxes(image)
+        print("bboxes:", bboxes)
+        print("track_id:", track_ids)
+        print("class_id:", class_ids)
+        print("confidences:", confidences)
 
         # Draw bounding boxes on the image
         image_with_bboxes = draw_bounding_boxes(
