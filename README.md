@@ -1,6 +1,6 @@
-![Hazard Detection](https://raw.githubusercontent.com/Ebimsv/Hazard-Detection-and-Captioning-System/refs/heads/main/pics/hazard.png)
-
 # **Hazard Detection and Captioning System**
+
+![Hazard Detection and Captioning System](https://raw.githubusercontent.com/Ebimsv/Hazard-Detection-and-Captioning-System/refs/heads/main/pics/hazard.png?token=GHSAT0AAAAAACSPY6GHZVSADFYKHBIJUGSCZ2HYSRQ)
 
 ## **Table of Contents**
 
