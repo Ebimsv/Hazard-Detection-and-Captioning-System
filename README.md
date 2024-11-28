@@ -48,7 +48,7 @@ This project implements a hazard detection and captioning system for driver moni
 │       ├── yolo11n.pt
 │       └── yolov8n.pt
 ├── pics                                  # Sample images for testing
-│   ├── car.jpeg
+│   ├── dog.png
 ├── README.md                             # Documentation file (this file)
 ├── requirements.txt                      # Dependencies for the project
 ├── results
@@ -141,7 +141,7 @@ video_0001_0,False,1,"car detected",,,,,,,,,,,,,,,,,
 video_0001_28,True,3,"bicycle detected",,,,,,,,,,,,,,,,,
 ```
 
-### **Core Components**
+## **Core Components**
 
 1. **Driver State Change Detection**:
 
@@ -185,7 +185,7 @@ video_0001_28,True,3,"bicycle detected",,,,,,,,,,,,,,,,,
 
 ---
 
-### **Our Key Contributions**
+## **Our Key Contributions**
 
 1. **Enhanced Hazard Detection**:
 
@@ -220,7 +220,7 @@ video_0001_28,True,3,"bicycle detected",,,,,,,,,,,,,,,,,
 Run the YOLO detection module on a sample image:
 
 ```bash
-python src/utils/detection_utils.py --image pics/car.jpeg --model YOLO_models/yolov8n.pt
+python src/utils/detection_utils.py --image pics/dog.png --model YOLO_models/yolov8n.pt
 ```
 
 ### **Test Captioning**
@@ -231,7 +231,7 @@ Generate captions for an image:
 from PIL import Image
 from src.utils.captioning_utils import get_captioner
 
-image = Image.open("pics/car.jpeg")
+image = Image.open("pics/dog.png")
 captioner = get_captioner("blip_base")
 caption = captioner.get_caption(image)
 print("Generated Caption:", caption)
